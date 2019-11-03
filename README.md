@@ -20,7 +20,8 @@ $mysql_password = "";
 The database must have a table create with the following command.
 ```sql
 CREATE TABLE `ip` (
- `site` varchar(256) CHARACTER SET ascii NOT NULL,
- `ip` int(11) NOT NULL
-)
+ `site` VARCHAR(256) CHARACTER SET ascii NOT NULL,
+ `ip` INT(11) UNSIGNED NOT NULL,
+  PRIMARY KEY (`site`)
+);
 ```
