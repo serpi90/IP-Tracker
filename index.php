@@ -26,9 +26,10 @@ function is_site_registered($db, $site)
 }
 function register_site($db, $site, $ip)
 {
-	$address = ip2long($ip);
+	$address = inet_pton($ip);
 	$stmt = $db->prepare("INSERT INTO `ip` (`site`,`ip`) VALUES (?,?) ON DUPLICATE KEY UPDATE `ip` = ?");
-	$stmt->bind_param("sii", $site, $address, $address);
+	// I still don't know why this must be sss insteas of sbb, php is weird.
+	$stmt->bind_param("sss", $site, $address, $address);
 	$stmt->execute() or die($stmt->error);
 	$stmt->close();
 }
@@ -41,7 +42,14 @@ function ip_for_site($db, $site)
 	$stmt->bind_result($address);
 	$stmt->fetch();
 	$stmt->close();
-	return long2ip($address);
+	$bytes = unpack("N4",$address); // Network orders is always Big Endian
+	if( $bytes[2] === 0 && $bytes[3] === 0 && $bytes[4] === 0 ) {
+		// Assume IPv4
+		return long2ip($bytes[1]);
+	} else {
+		// Assume IPv6
+		return inet_ntop($address);
+	}
 }
 // End if no site is provided
 isset($_REQUEST["site"]) or die('no site provided');

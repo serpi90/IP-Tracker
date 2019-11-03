@@ -21,7 +21,7 @@ The database must have a table create with the following command.
 ```sql
 CREATE TABLE `ip` (
  `site` VARCHAR(256) CHARACTER SET ascii NOT NULL,
- `ip` INT(11) UNSIGNED NOT NULL,
+ `ip` BINARY(16) NOT NULL,
   PRIMARY KEY (`site`)
 );
 ```
