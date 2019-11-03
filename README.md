@@ -9,7 +9,7 @@ Simple php script to keep track of dynamic IPs, using mysql storage.
 `iptracker.php?site=mysite` fetches the last known ip for `mysite`. If no address is known nothing is returned.
 
 ## Configuration
-Edit the first lines of the script, indicating the database configuration to use.
+Rename config-example.php to config.php and configure the variables defined there.
 ```php
 $mysql_host = "";
 $mysql_database = "";

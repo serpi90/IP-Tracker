@@ -1,72 +1,61 @@
 <?php
 // Mysql Configuration
-$mysql_host = "";
-$mysql_database = "";
-$mysql_user = "";
-$mysql_password = "";
+require_once('config.php');
 
-// Function to get the client ip address
-function get_client_ip() {
-    $ipaddress = '';
-    if ($_SERVER['HTTP_CLIENT_IP'])
-        $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
-    else if($_SERVER['HTTP_X_FORWARDED_FOR'])
-        $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    else if($_SERVER['HTTP_X_FORWARDED'])
-        $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
-    else if($_SERVER['HTTP_FORWARDED_FOR'])
-        $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
-    else if($_SERVER['HTTP_FORWARDED'])
-        $ipaddress = $_SERVER['HTTP_FORWARDED'];
-    else if($_SERVER['REMOTE_ADDR'])
-        $ipaddress = $_SERVER['REMOTE_ADDR'];
-    else
-        $ipaddress = 'UNKNOWN';
- 
-    return $ipaddress;
+function detect_client_ip()
+{
+	$ip_address = 'UNKNOWN';
+	if ($_SERVER['HTTP_CLIENT_IP']) $ip_address = $_SERVER['HTTP_CLIENT_IP'];
+	else if ($_SERVER['HTTP_X_FORWARDED_FOR']) $ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
+	else if ($_SERVER['HTTP_X_FORWARDED']) $ip_address = $_SERVER['HTTP_X_FORWARDED'];
+	else if ($_SERVER['HTTP_FORWARDED_FOR']) $ip_address = $_SERVER['HTTP_FORWARDED_FOR'];
+	else if ($_SERVER['HTTP_FORWARDED']) $ip_address = $_SERVER['HTTP_FORWARDED'];
+	else if ($_SERVER['REMOTE_ADDR']) $ip_address = $_SERVER['REMOTE_ADDR'];
+	return $ip_address;
 }
-// End if no site is provided
-isset( $_REQUEST["site"] ) or die();
-
-// Fetch parameters to be used
-$site_name = $_REQUEST["site"];
-$address = ip2long(get_client_ip());
-
-$db_conn = new mysqli( $mysql_host, $mysql_user, $mysql_password, $mysql_database );
-// Check if the provided site exists
-$stmt = $db_conn->prepare("SELECT COUNT(site) FROM ip WHERE site = ?");
-$stmt->bind_param("s", $site_name);
-$stmt->execute() or die( $stmt->error );
-$stmt->bind_result($site_exists);
-$stmt->fetch();
-$stmt->close();
-$site_exists = $site_exists == 0 ? false : true;
-
-// ----
-if( isset( $_REQUEST["set"] ) ) {
-	if( !$site_exists ) {
-		// Handle site IP registration
-		$stmt = $db_conn->prepare("INSERT INTO ip (site,ip) VALUES (?,?)");
-		$stmt->bind_param("si", $site_name, $address);
-		$stmt->execute() or die( $stmt->error );
-		$stmt->close();
-	} else {
-		// Handle site IP update
-		$stmt = $db_conn->prepare("UPDATE ip SET ip = ? WHERE site = ?");
-		$stmt->bind_param("is", $address, $site_name);
-		$stmt->execute() or die( $stmt->error );
-		$stmt->close();
-	}
-} else {	
-	// Handle site IP request
-	$site_exists or die();
-	$stmt = $db_conn->prepare("SELECT ip FROM ip WHERE site = ?");
-	$stmt->bind_param("s", $site_name);
-	$stmt->execute() or die( $stmt->error );
+function is_site_registered($db, $site)
+{
+	$site_count = 0;
+	$stmt = $db->prepare("SELECT COUNT(`site`) FROM `ip` WHERE `site` = ?");
+	$stmt->bind_param("s", $site);
+	$stmt->execute() or die($stmt->error);
+	$stmt->bind_result($site_count);
+	$stmt->fetch();
+	$stmt->close();
+	return $site_count > 0;
+}
+function register_site($db, $site, $ip)
+{
+	$address = ip2long($ip);
+	$stmt = $db->prepare("INSERT INTO `ip` (`site`,`ip`) VALUES (?,?) ON DUPLICATE KEY UPDATE `ip` = ?");
+	$stmt->bind_param("sii", $site, $address, $address);
+	$stmt->execute() or die($stmt->error);
+	$stmt->close();
+}
+function ip_for_site($db, $site)
+{
+	$address = null;
+	$stmt = $db->prepare("SELECT `ip` FROM `ip` WHERE site = ?");
+	$stmt->bind_param("s", $site);
+	$stmt->execute() or die($stmt->error);
 	$stmt->bind_result($address);
 	$stmt->fetch();
 	$stmt->close();
-	// Display the obtained IPv4 address
-	echo long2ip($address);
+	return long2ip($address);
 }
-?>
+// End if no site is provided
+isset($_REQUEST["site"]) or die('no site provided');
+
+// Fetch parameters to be used
+$site = $_REQUEST["site"];
+$ip = detect_client_ip();
+
+$db = new mysqli($mysql_host, $mysql_user, $mysql_password, $mysql_database);
+if ($db->connect_errno) die("Failed to connect to MySQL");
+
+if (isset($_REQUEST["set"])) {
+	register_site($db, $site, $ip);
+	echo $ip;
+} else if (is_site_registered($db, $site)) {
+	echo ip_for_site($db, $site);
+}
