@@ -13,17 +13,6 @@ function detect_client_ip()
 	else if ($_SERVER['REMOTE_ADDR']) $ip_address = $_SERVER['REMOTE_ADDR'];
 	return $ip_address;
 }
-function is_site_registered($db, $site)
-{
-	$site_count = 0;
-	$stmt = $db->prepare("SELECT COUNT(`site`) FROM `ip` WHERE `site` = ?");
-	$stmt->bind_param("s", $site);
-	$stmt->execute() or die($stmt->error);
-	$stmt->bind_result($site_count);
-	$stmt->fetch();
-	$stmt->close();
-	return $site_count > 0;
-}
 function register_site($db, $site, $ip)
 {
 	$address = inet_pton($ip);
@@ -40,10 +29,11 @@ function ip_for_site($db, $site)
 	$stmt->bind_param("s", $site);
 	$stmt->execute() or die($stmt->error);
 	$stmt->bind_result($address);
-	$stmt->fetch();
+	$found = $stmt->fetch();
 	$stmt->close();
-	$bytes = unpack("N4",$address); // Network orders is always Big Endian
-	if( $bytes[2] === 0 && $bytes[3] === 0 && $bytes[4] === 0 ) {
+	if (!$found) return null;
+	$bytes = unpack("N4", $address); // Network orders is always Big Endian
+	if ($bytes[2] === 0 && $bytes[3] === 0 && $bytes[4] === 0) {
 		// Assume IPv4
 		return long2ip($bytes[1]);
 	} else {
@@ -64,6 +54,7 @@ if ($db->connect_errno) die("Failed to connect to MySQL");
 if (isset($_REQUEST["set"])) {
 	register_site($db, $site, $ip);
 	echo $ip;
-} else if (is_site_registered($db, $site)) {
-	echo ip_for_site($db, $site);
+} else {
+	$ip = ip_for_site($db, $site);
+	if ($ip) echo $ip;
 }
