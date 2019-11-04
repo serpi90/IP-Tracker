@@ -1,7 +1,6 @@
 <?php
 header('Content-Type: text/plain');
-function detect_client_ip()
-{
+function detect_client_ip() {
 	$ip_address = 'UNKNOWN';
 	if ($_SERVER['HTTP_CLIENT_IP']) $ip_address = $_SERVER['HTTP_CLIENT_IP'];
 	else if ($_SERVER['HTTP_X_FORWARDED_FOR']) $ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
@@ -11,8 +10,7 @@ function detect_client_ip()
 	else if ($_SERVER['REMOTE_ADDR']) $ip_address = $_SERVER['REMOTE_ADDR'];
 	return $ip_address;
 }
-function register_site($db, $site, $ip)
-{
+function register_site($db, $site, $ip) {
 	$address = inet_pton($ip);
 	$stmt = $db->prepare("INSERT INTO `ip` (`site`,`ip`) VALUES (?,?) ON DUPLICATE KEY UPDATE `ip` = ?");
 	// I still don't know why this must be sss insteas of sbb, php is weird.
@@ -20,8 +18,7 @@ function register_site($db, $site, $ip)
 	$stmt->execute() or die($stmt->error);
 	$stmt->close();
 }
-function ip_for_site($db, $site)
-{
+function ip_for_site($db, $site) {
 	$address = null;
 	$stmt = $db->prepare("SELECT `ip` FROM `ip` WHERE site = ?");
 	$stmt->bind_param("s", $site);
@@ -41,22 +38,20 @@ function ip_for_site($db, $site)
 }
 
 if ($_SERVER['REQUEST_METHOD'] != 'GET' && $_SERVER['REQUEST_METHOD'] != 'POST') {
-	// 405 Method Not Allowed
-	http_response_code(405);
+	http_response_code(405); // 405 Method Not Allowed
 	die();
 }
 
 if (!isset($_REQUEST["site"])) {
-	// 400 Bad Request
-	http_response_code(400);
+	http_response_code(400); // 400 Bad Request
 	die('no site provided');
 }
-
 $site = $_REQUEST["site"];
+
 require_once('config.php');
 $db = new mysqli($mysql_host, $mysql_user, $mysql_password, $mysql_database);
 if ($db->connect_errno) {
-	http_response_code(500);
+	http_response_code(500); // Internal Server Error
 	die("Failed to connect to MySQL");
 }
 
@@ -73,7 +68,6 @@ switch ($_SERVER['REQUEST_METHOD']) {
 		echo $ip;
 		break;
 	default:
-		// 405 Method Not Allowed
-		http_response_code(405);
+		http_response_code(405); // 405 Method Not Allowed
 		die();
 }
