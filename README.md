@@ -4,9 +4,9 @@ Simple php script to keep track of dynamic IPs, using mysql storage.
 
 ## Usage
 
-`index.php?set&site=mysite` stores the visible ip of the client accessing the script, and stores it under `mysite`.
+`POST` `index.php?site=mysite` stores the visible ip of the client accessing the script, and stores it under `mysite`.
 
-`index.php?site=mysite` fetches the last known ip for `mysite`. If no address is known nothing is returned.
+`GET` `index.php?site=mysite` fetches the last known ip for `mysite`. If no address is known nothing is returned.
 
 ## Configuration
 Rename config-example.php to config.php and configure the variables defined there.
