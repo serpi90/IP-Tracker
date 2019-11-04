@@ -1,7 +1,4 @@
 <?php
-// Mysql Configuration
-require_once('config.php');
-
 function detect_client_ip()
 {
 	$ip_address = 'UNKNOWN';
@@ -48,6 +45,7 @@ isset($_REQUEST["site"]) or die('no site provided');
 $site = $_REQUEST["site"];
 $ip = detect_client_ip();
 
+require_once('config.php');
 $db = new mysqli($mysql_host, $mysql_user, $mysql_password, $mysql_database);
 if ($db->connect_errno) die("Failed to connect to MySQL");
 
