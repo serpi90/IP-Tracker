@@ -39,22 +39,41 @@ function ip_for_site($db, $site)
 		return inet_ntop($address);
 	}
 }
-// End if no site is provided
-isset($_REQUEST["site"]) or die('no site provided');
 
-// Fetch parameters to be used
+if ($_SERVER['REQUEST_METHOD'] != 'GET' && $_SERVER['REQUEST_METHOD'] != 'POST') {
+	// 405 Method Not Allowed
+	http_response_code(405);
+	die();
+}
+
+if (!isset($_REQUEST["site"])) {
+	// 400 Bad Request
+	http_response_code(400);
+	die('no site provided');
+}
+
 $site = $_REQUEST["site"];
-$ip = detect_client_ip();
-
 require_once('config.php');
 $db = new mysqli($mysql_host, $mysql_user, $mysql_password, $mysql_database);
-if ($db->connect_errno) die("Failed to connect to MySQL");
+if ($db->connect_errno) {
+	http_response_code(500);
+	die("Failed to connect to MySQL");
+}
 
-if (isset($_REQUEST["set"])) {
-	header('Connection: close');
-	register_site($db, $site, $ip);
-	echo $ip;
-} else {
-	$ip = ip_for_site($db, $site);
-	if ($ip) echo $ip;
+switch ($_SERVER['REQUEST_METHOD']) {
+	case 'GET':
+		$ip = ip_for_site($db, $site);
+		if ($ip) echo $ip;
+		else http_response_code(404);
+		break;
+	case 'POST':
+		header('Connection: close');
+		$ip = detect_client_ip();
+		register_site($db, $site, $ip);
+		echo $ip;
+		break;
+	default:
+		// 405 Method Not Allowed
+		http_response_code(405);
+		die();
 }
